@@ -33,9 +33,13 @@ class Main {
 
 		ContextFreeGrammar cfg = MyGrammar.makeGrammar();
 		Word testString = new Word("x+x");
-
-		// this should print true!
+		Word testString1 = new Word("1+0");
+		Word testString2 = new Word("01");
+		Word testString3 = new Word("*-*");
 		System.out.println(parser.isInLanguage(cfg, testString));
+		System.out.println(parser.isInLanguage(cfg, testString1));
+		System.out.println(parser.isInLanguage(cfg, testString2));
+		System.out.println(parser.isInLanguage(cfg, testString3));
 	}
 
 
