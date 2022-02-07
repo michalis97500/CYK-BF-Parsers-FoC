@@ -95,6 +95,51 @@ public class Parser implements IParser {
   }
 
   public ParseTreeNode generateParseTree(ContextFreeGrammar cfg, Word w) {
+    if (isInLanguage(cfg, w)) {
+      int wordLength = w.length();
+      if (wordLength == 0) {
+        ParseTreeNode ptn = ParseTreeNode.emptyParseTree(cfg.getStartVariable());
+        return ptn;
+      }
+
+      int numberDerivations = (2 * wordLength) - 1;
+      List<Derivation> allDerivations = Derivations(cfg, numberDerivations);
+      for (Derivation derivation: allDerivations) {
+        if (w.equals(derivation.getLatestWord())) {
+          ParseTreeNode ptn = buildParseTreeNode(derivation);
+          return ptn;
+        }
+      }
+    }
     return null;
+  }
+  private ParseTreeNode buildParseTreeNode(Derivation d) {
+    Word finalWord = d.getLatestWord();
+    List<ParseTreeNode> endNodes = new ArrayList<ParseTreeNode>();
+    for (Symbol s: finalWord) {
+      endNodes.add(new ParseTreeNode(s));
+    }
+    
+    for (Step s: d) {
+      Rule parentRule = s.getRule();
+      if (parentRule == null) {
+        break;
+      }
+      Symbol parentSymbol = parentRule.getVariable();
+      int stepIndex = s.getIndex();
+      Word expansion = s.getRule().getExpansion();
+      if (expansion.length() > 1) {
+        ParseTreeNode parentNode = new ParseTreeNode(parentSymbol, endNodes.get(stepIndex), endNodes.get(stepIndex + 1));
+        endNodes.remove(stepIndex);
+        endNodes.remove(stepIndex);
+        endNodes.add(stepIndex, parentNode);
+      } else {
+        ParseTreeNode parentNode = new ParseTreeNode(parentSymbol, endNodes.get(stepIndex));
+        endNodes.remove(stepIndex);
+        endNodes.add(stepIndex, parentNode);
+      }
+
+    }
+    return endNodes.get(0);
   }
 }
