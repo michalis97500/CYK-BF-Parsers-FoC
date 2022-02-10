@@ -1,3 +1,4 @@
+package BF;
 import computation.contextfreegrammar.*;
 import computation.parser.*;
 import computation.parsetree.*;
@@ -95,39 +96,47 @@ public class Parser implements IParser {
   }
 
   public ParseTreeNode generateParseTree(ContextFreeGrammar cfg, Word w) {
-    if (isInLanguage(cfg, w)) {
-      int wordLength = w.length();
-      if (wordLength == 0) {
-        ParseTreeNode ptn = ParseTreeNode.emptyParseTree(cfg.getStartVariable());
-        return ptn;
-      }
-
-      int numberDerivations = (2 * wordLength) - 1;
-      List<Derivation> allDerivations = Derivations(cfg, numberDerivations);
-      for (Derivation derivation: allDerivations) {
-        if (w.equals(derivation.getLatestWord())) {
-          ParseTreeNode ptn = buildParseTreeNode(derivation);
+    try{
+      if (isInLanguage(cfg, w)) {
+        int lengthOfWord = w.length();
+        //length is actually greater than 0
+        if(lengthOfWord > 0){
+          int totalDerivations = (2 * lengthOfWord) - 1;
+          List<Derivation> allPossibleDerivations = Derivations(cfg, totalDerivations);
+          //loop through all derivations
+          for (Derivation derivation: allPossibleDerivations) {
+            if (w.equals(derivation.getLatestWord())) { //match, return the tree
+              ParseTreeNode tree = buildParseTreeNode(derivation);
+              return tree;
+            }
+          }
+        }
+        if (lengthOfWord == 0) {
+          ParseTreeNode ptn = ParseTreeNode.emptyParseTree(cfg.getStartVariable());
           return ptn;
         }
       }
+      return null;
+    } catch (Exception e){
+      System.out.println("Error in generateParseTree : " + e);
+      return null;
     }
-    return null;
   }
-  private ParseTreeNode buildParseTreeNode(Derivation d) {
-    Word finalWord = d.getLatestWord();
+  
+  private ParseTreeNode buildParseTreeNode(Derivation derivation) {
+    Word finalWord = derivation.getLatestWord();
     List<ParseTreeNode> endNodes = new ArrayList<ParseTreeNode>();
-    for (Symbol s: finalWord) {
-      endNodes.add(new ParseTreeNode(s));
+    for (Symbol symbol: finalWord) {
+      endNodes.add(new ParseTreeNode(symbol));
     }
-    
-    for (Step s: d) {
-      Rule parentRule = s.getRule();
+    for (Step step: derivation) {
+      Rule parentRule = step.getRule();
       if (parentRule == null) {
         break;
       }
       Symbol parentSymbol = parentRule.getVariable();
-      int stepIndex = s.getIndex();
-      Word expansion = s.getRule().getExpansion();
+      int stepIndex = step.getIndex();
+      Word expansion = step.getRule().getExpansion();
       if (expansion.length() > 1) {
         ParseTreeNode parentNode = new ParseTreeNode(parentSymbol, endNodes.get(stepIndex), endNodes.get(stepIndex + 1));
         endNodes.remove(stepIndex);
@@ -142,4 +151,5 @@ public class Parser implements IParser {
     }
     return endNodes.get(0);
   }
+
 }
