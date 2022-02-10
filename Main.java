@@ -9,7 +9,7 @@
 import java.util.Arrays;
 import java.util.Scanner;
 
-import BF.Parser;
+import CYK.Parser;
 import computation.contextfreegrammar.*;
 import computation.parser.*;
 import computation.parsetree.*;
@@ -42,6 +42,7 @@ class Main {
 		System.out.println(parser.isInLanguage(cfg, testString1));
 		System.out.println(parser.isInLanguage(cfg, testString2));
 		System.out.println(parser.isInLanguage(cfg, testString3));
+		
 		System.out.println("CYK Tests:");
 		testString1 = new Word("1*-0*-1+0*-1");
 		testString1 = new Word("0+-1*-0+1*1");
@@ -51,6 +52,7 @@ class Main {
 		System.out.println(parser.isInLanguage(cfg, testString1));
 		System.out.println(parser.isInLanguage(cfg, testString2));
 		System.out.println(parser.isInLanguage(cfg, testString3));
+		
 	}
 
 
