@@ -9,7 +9,6 @@
 import java.util.Arrays;
 import java.util.Scanner;
 
-import CYK.Parser;
 import computation.contextfreegrammar.*;
 import computation.parser.*;
 import computation.parsetree.*;
@@ -26,13 +25,9 @@ class Main {
 	private static IParser parser = new Parser();
 
 	public static void customCode() {
-		// You can write your own custom code here and run it with option 3.
-		// Good for testing your code works!
-		// Any code here is totally informal and does not count towards your submission.
 
-		// Below is the kind of code you might want to write to test your parser
-
-		ContextFreeGrammar cfg = MyGrammar.makeGrammar();
+		
+		ContextFreeGrammar cfg = MyGrammar.courseworkCNF();
 		System.out.println("Brute Force tests:");
 		Word testString = new Word("x+x");
 		Word testString1 = new Word("1+0");
@@ -53,6 +48,8 @@ class Main {
 		System.out.println(parser.isInLanguage(cfg, testString2));
 		System.out.println(parser.isInLanguage(cfg, testString3));
 		
+		System.out.println("Tree generation Tests:");
+		System.out.println(parser.generateParseTree(cfg, testString));
 	}
 
 

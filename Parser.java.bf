@@ -1,4 +1,3 @@
-package BF;
 import computation.contextfreegrammar.*;
 import computation.parser.*;
 import computation.parsetree.*;
@@ -27,10 +26,11 @@ public class Parser implements IParser {
   private List<Rule> ruleFinder(Symbol s, ContextFreeGrammar cfg){
     List<Rule> returnTheseRules = new ArrayList<Rule>();
     try{
-      //check if r is Terminal
+      //Check if symbol is Terminal
       if (s.isTerminal()){
-        return returnTheseRules; //escape method
+        return returnTheseRules;
       }
+      //Loop through rules to find the rules for our symbol
       List<Rule> rules = cfg.getRules();
       for (Rule rule: rules) {
         if (rule.getVariable().equals(s)) {
@@ -58,17 +58,18 @@ public class Parser implements IParser {
         }
         derivations = new ArrayList<Derivation>();
 
-        //clone derivation in case it is required for branching
-        //later
+        //For each derivation, save a copy to check with rules later
         for(Derivation derivation:returnDerivations){
           Derivation derivationCopy = new Derivation(derivation);
           Word w = derivation.getLatestWord();
           int indexOfWord = 0; boolean stop = false;
           for(Symbol s:w){
+            //If symbol is terminl skip
             if(s.isTerminal()){
               indexOfWord++;
               continue;
             }
+          //Get all rules for our symbol
           for(Rule rule:ruleFinder(s, cfg)){
             Word wordExpansion = rule.getExpansion();
             Word wordReplaced = w.replace(indexOfWord,wordExpansion);
@@ -99,21 +100,22 @@ public class Parser implements IParser {
     try{
       if (isInLanguage(cfg, w)) {
         int lengthOfWord = w.length();
-        //length is actually greater than 0
+        //Check that there is indeed a word given
         if(lengthOfWord > 0){
           int totalDerivations = (2 * lengthOfWord) - 1;
           List<Derivation> allPossibleDerivations = Derivations(cfg, totalDerivations);
-          //loop through all derivations
+          //Loop through all derivations
           for (Derivation derivation: allPossibleDerivations) {
-            if (w.equals(derivation.getLatestWord())) { //match, return the tree
-              ParseTreeNode tree = buildParseTreeNode(derivation);
-              return tree;
+            //If we can match this, return the tree
+            if (w.equals(derivation.getLatestWord())) { 
+              ParseTreeNode newNode = buildParseTreeNode(derivation);
+              return newNode;
             }
           }
         }
         if (lengthOfWord == 0) {
-          ParseTreeNode ptn = ParseTreeNode.emptyParseTree(cfg.getStartVariable());
-          return ptn;
+          ParseTreeNode parseTreeFinal = ParseTreeNode.emptyParseTree(cfg.getStartVariable());
+          return parseTreeFinal;
         }
       }
       return null;
