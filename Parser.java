@@ -1,8 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.naming.ldap.PagedResultsResponseControl;
-
 import computation.contextfreegrammar.*;
 import computation.parser.IParser;
 import computation.parsetree.ParseTreeNode;
@@ -11,7 +9,6 @@ public class Parser implements IParser{
 
   Variable nullSymbol = new Variable('Ⅰ');
   ArrayList<ArrayList<ArrayList<Symbol>>> GlobalSymbolTable = new ArrayList<>();
-  ArrayList<ArrayList<ArrayList<Rule>>> GlobalRuleTable = new ArrayList<>();
   ArrayList<ArrayList<ArrayList<Object>>> GlobalParseTreeTable = new ArrayList<>();
   public boolean isInLanguage(ContextFreeGrammar cfg, Word w) {
     try{
@@ -20,17 +17,14 @@ public class Parser implements IParser{
       Symbol stVar = cfg.getStartVariable();
       List<Rule> rules = cfg.getRules();
       ArrayList<ArrayList<ArrayList<Symbol>>> SymbolTable = new ArrayList<>();
-      ArrayList<ArrayList<ArrayList<Rule>>> RuleTable = new ArrayList<>();
       ArrayList<ArrayList<ArrayList<Object>>> ParseTreeTable = new ArrayList<>();
       //Table generation
       int lengthOfWord = w.length();
       for(int i=0; i<lengthOfWord;i++){
         SymbolTable.add(new ArrayList<>(lengthOfWord));
-        RuleTable.add(new ArrayList<>(lengthOfWord));
         ParseTreeTable.add(new ArrayList<>(lengthOfWord));
         for(int j=0; j<lengthOfWord;j++){
           SymbolTable.get(i).add(new ArrayList<>());
-          RuleTable.get(i).add(new ArrayList<>());
           ParseTreeTable.get(i).add(new ArrayList<>());
         }
       }
@@ -62,7 +56,6 @@ public class Parser implements IParser{
           if(expansionSymbol.equals(terminalSymbol)){
             //Add to [i,i] of table
             SymbolTable.get(i).get(i).add(rule.getVariable());
-            RuleTable.get(i).get(i).add(rule);
             ParseTreeNode child = new ParseTreeNode(rule.getExpansion().get(0));
             ParseTreeTable.get(i).get(i).add(new ParseTreeNode(rule.getVariable(),child));
           }
@@ -85,7 +78,6 @@ public class Parser implements IParser{
                 //Check if the previous cells contain the first and second variable. i.e. this rule is what generated them
                 if(SymbolTable.get(i-1).get(substring-1).contains(firstExpansion) && SymbolTable.get(substring).get(substringEnd-1).contains(secondExpansion)){
                   SymbolTable.get(i-1).get(substringEnd-1).add(rule.getVariable());
-                  RuleTable.get(i-1).get(substringEnd-1).add(rule);
                   ParseTreeNode child1 = new ParseTreeNode(rule.getExpansion().get(0));
                   ParseTreeNode child2 = new ParseTreeNode(rule.getExpansion().get(1));
                   ParseTreeTable.get(i-1).get(substringEnd-1).add(new ParseTreeNode(rule.getVariable(),child1,child2));
@@ -96,14 +88,32 @@ public class Parser implements IParser{
         }
       }
       //Clone our tables to the global tables
-      GlobalSymbolTable = (ArrayList)SymbolTable.clone();
-      GlobalRuleTable = (ArrayList)RuleTable.clone();
-      GlobalParseTreeTable = (ArrayList)ParseTreeTable.clone();
+      setGlobalSymbolTable(SymbolTable);
+      setGlobalParseTreeTable(ParseTreeTable);
       return SymbolTable.get(0).get(lengthOfWord-1).contains(cfg.getStartVariable());
     }catch(Exception e){
       System.out.println("Error in CYK : " + e);
       return false;
     }
+  }
+
+  private void setGlobalSymbolTable(ArrayList<ArrayList<ArrayList<Symbol>>> var) {
+    this.GlobalSymbolTable = var;
+  }
+
+  private void setGlobalParseTreeTable(ArrayList<ArrayList<ArrayList<Object>>> var) {
+    this.GlobalParseTreeTable = var;
+  }
+
+  private ParseTreeNode validSymbolNode(Symbol stVar,int y,int x){
+    ParseTreeNode terminalNode = new ParseTreeNode(nullSymbol);
+    for(int index=0;index<GlobalParseTreeTable.get(y).get(x).size();index++){
+      terminalNode = (ParseTreeNode)GlobalParseTreeTable.get(y).get(x).get(index);
+      if(terminalNode.getSymbol() != nullSymbol && terminalNode.getSymbol() != stVar){
+        break;
+      }
+    }
+    return terminalNode;
   }
 
   public ParseTreeNode generateParseTree(ContextFreeGrammar cfg, Word w) {
@@ -130,29 +140,13 @@ public class Parser implements IParser{
             //If the current cell is not empty, get the children and build a parse tree
             if(GlobalSymbolTable.get(i-1).get(i+addition).size() > 1){
               ParseTreeNode thisNode =new ParseTreeNode(nullSymbol);
-              //Make sure we are NOT getting a duplicate/start symbol
-              for(int index=0;index<GlobalParseTreeTable.get(i-1).get(i+addition).size();index++){
-                thisNode = (ParseTreeNode)GlobalParseTreeTable.get(i-1).get(i+addition).get(index);
-                if(thisNode.getSymbol() != nullSymbol && thisNode.getSymbol() != stVar){
-                  break;
-                }
-              }
+              ParseTreeNode terminalNode =  new ParseTreeNode(nullSymbol);
+              ParseTreeNode terminalNode2 =  new ParseTreeNode(nullSymbol);
+              thisNode = validSymbolNode(stVar,i-1,i+addition);
               //Check that we dont have the wrong symbol
               if(thisNode.getSymbol() !=nullSymbol){
-                ParseTreeNode terminalNode =  new ParseTreeNode(nullSymbol);
-                ParseTreeNode terminalNode2 =  new ParseTreeNode(nullSymbol);
-                for(int index=0;index<GlobalParseTreeTable.get(i-1).get(i-1+addition).size();index++){
-                  terminalNode = (ParseTreeNode)GlobalParseTreeTable.get(i-1).get(i-1+addition).get(index);
-                  if(terminalNode.getSymbol() != nullSymbol && terminalNode.getSymbol() != stVar){
-                    break;
-                  }
-                }
-                for(int index=0;index<GlobalParseTreeTable.get(i).get(i+addition).size();index++){
-                  terminalNode2 = (ParseTreeNode)GlobalParseTreeTable.get(i).get(i+addition).get(index);
-                  if(terminalNode2.getSymbol() != nullSymbol && terminalNode2.getSymbol() != stVar){
-                    break;
-                  }
-                }
+                terminalNode = validSymbolNode(stVar,i-1,i-1+addition);
+                terminalNode2 = validSymbolNode(stVar,i,i+addition);
                 if(terminalNode.getSymbol() !=null && terminalNode2.getSymbol() !=null && terminalNode.getSymbol() !=nullSymbol && terminalNode2.getSymbol() !=nullSymbol){
                   ParseTreeNode newNode = new ParseTreeNode(thisNode.getSymbol(),terminalNode,terminalNode2);
                   GlobalSymbolTable.get(i-1).get(i-1+addition).set(1,nullSymbol);
