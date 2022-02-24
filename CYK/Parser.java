@@ -1,5 +1,7 @@
+package CYK;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import computation.contextfreegrammar.*;
 import computation.parser.IParser;
@@ -28,9 +30,10 @@ public class Parser implements IParser{
           ParseTreeTable.get(i).add(new ArrayList<>());
         }
       }
-      for(int i=0;i<SymbolTable.size();i++){
-        for(int j=0;j<SymbolTable.get(i).size();j++){
-          SymbolTable.get(i).get(j).add(nullSymbol);
+      for(int i=0;i<ParseTreeTable.size();i++){
+        for(int j=0;j<ParseTreeTable.get(i).size();j++){
+          ParseTreeNode nullTree = new ParseTreeNode(nullSymbol);
+          ParseTreeTable.get(i).get(j).add(nullTree);
         }
       }
       //Begin parsing of word
@@ -105,85 +108,94 @@ public class Parser implements IParser{
     this.GlobalParseTreeTable = var;
   }
 
-  private ParseTreeNode validSymbolNode(Symbol stVar,int y,int x){
-    ParseTreeNode terminalNode = new ParseTreeNode(nullSymbol);
+  private ParseTreeNode treeFromSymbol(Symbol symbol, int y, int x){
+    ParseTreeNode node = new ParseTreeNode(nullSymbol);
+    ArrayList<ParseTreeNode> listOfNodes = new ArrayList<>();
+    //Loop to find matching trees
     for(int index=0;index<GlobalParseTreeTable.get(y).get(x).size();index++){
-      terminalNode = (ParseTreeNode)GlobalParseTreeTable.get(y).get(x).get(index);
-      if(terminalNode.getSymbol() != nullSymbol && terminalNode.getSymbol() != stVar){
-        break;
+      node = (ParseTreeNode)GlobalParseTreeTable.get(y).get(x).get(index);
+      if(node.getSymbol() == symbol){
+        listOfNodes.add(node);
       }
     }
-    return terminalNode;
+    int maxLength = 0;
+    //Return the longest tree
+    for(ParseTreeNode nodeToTest : listOfNodes){
+      int length = nodeToTest.toString().length();
+      if(length > maxLength){
+        maxLength = length;
+      }
+    }
+    for(ParseTreeNode nodeToTest : listOfNodes){
+      int lengthTest = nodeToTest.toString().length();
+      if(lengthTest >= maxLength){
+        return nodeToTest;      
+      }
+    }
+
+    return null; 
+  }
+
+  private int treeTerminalCounter(ParseTreeNode treeToTest, Set<Terminal> terminalsList){
+    String[] treeCharacters = treeToTest.toString().split("");
+    int terminalsFound = 0;
+    for(String character : treeCharacters){
+      for(Terminal terminalCharacter : terminalsList){
+        if(character.equals(terminalCharacter.toString())){
+          terminalsFound += 1;
+        }                      
+      }
+    }
+    return terminalsFound;
   }
 
   public ParseTreeNode generateParseTree(ContextFreeGrammar cfg, Word w) {
     try{
       //Check if word is in language
       if(isInLanguage(cfg,w)){
+        List<Rule> rules = cfg.getRules();
         int lengthOfWord = w.length();
         Symbol stVar = cfg.getStartVariable();
-        ArrayList<ArrayList<ArrayList<Object>>> ParseTreeTable = new ArrayList<>();
-        //Table generation
-        for(int i=0; i<lengthOfWord;i++){
-          ParseTreeTable.add(new ArrayList<>(lengthOfWord));
-          for(int j=0; j<lengthOfWord;j++){
-            ParseTreeTable.get(i).add(new ArrayList<>());
-          }
-        }
-        //Start building parse trees
-        for(int addition=0;addition<lengthOfWord-2;addition++){
-          int bounds = lengthOfWord-1;
-          for(int i=1;i<lengthOfWord;i++){
-            if(i+addition > bounds){
-              continue;
-            }
-            //If the current cell is not empty, get the children and build a parse tree
-            if(GlobalSymbolTable.get(i-1).get(i+addition).size() > 1){
-              ParseTreeNode thisNode =new ParseTreeNode(nullSymbol);
-              ParseTreeNode terminalNode =  new ParseTreeNode(nullSymbol);
-              ParseTreeNode terminalNode2 =  new ParseTreeNode(nullSymbol);
-              thisNode = validSymbolNode(stVar,i-1,i+addition);
-              //Check that we dont have the wrong symbol
-              if(thisNode.getSymbol() !=nullSymbol){
-                terminalNode = validSymbolNode(stVar,i-1,i-1+addition);
-                terminalNode2 = validSymbolNode(stVar,i,i+addition);
-                if(terminalNode.getSymbol() !=null && terminalNode2.getSymbol() !=null && terminalNode.getSymbol() !=nullSymbol && terminalNode2.getSymbol() !=nullSymbol){
-                  ParseTreeNode newNode = new ParseTreeNode(thisNode.getSymbol(),terminalNode,terminalNode2);
-                  GlobalSymbolTable.get(i-1).get(i-1+addition).set(1,nullSymbol);
-                  GlobalSymbolTable.get(i).get(i+addition).set(1,nullSymbol);
-                  GlobalParseTreeTable.get(i-1).get(i+addition).set(0,newNode);
+        Set<Terminal> terminalsList = cfg.getTerminals();
+        for(int lengthOfSubstring=2; lengthOfSubstring<=lengthOfWord;lengthOfSubstring++){
+          //For all substring starts
+          for(int i=1;i<=(lengthOfWord-lengthOfSubstring+1);i++){
+            //Substring end
+            int substringEnd = i+lengthOfSubstring-1;
+            for(int substring=i;substring<=substringEnd-1;substring++){
+              //Loop through all rules
+              for(Rule rule : rules){
+                //Chomsky normal form so length MUST be 2 since it is non-terminal
+                //The only exception is for terminals
+                if(rule.getExpansion().length() == 2){
+                  Symbol firstExpansion = rule.getExpansion().get(0);
+                  Symbol secondExpansion = rule.getExpansion().get(1);
+                  //Check if the previous cells contain the first and second variable. i.e. this rule is that generated them
+                  for(int index1 = 0 ; index1 < GlobalParseTreeTable.get(i-1).get(substring-1).size(); index1++){
+                    for(int index2 = 0 ; index2 < GlobalParseTreeTable.get(substring).get(substringEnd-1).size(); index2++){
+                      if(((ParseTreeNode)GlobalParseTreeTable.get(i-1).get(substring-1).get(index1)).getSymbol() == firstExpansion && ((ParseTreeNode)GlobalParseTreeTable.get(substring).get(substringEnd-1).get(index2)).getSymbol() == secondExpansion){
+                        ParseTreeNode child1 = (ParseTreeNode)GlobalParseTreeTable.get(i-1).get(substring-1).get(index1);
+                        ParseTreeNode child2 = (ParseTreeNode)GlobalParseTreeTable.get(substring).get(substringEnd-1).get(index2);
+                        if(treeTerminalCounter(child1, terminalsList) > 0 && treeTerminalCounter(child2, terminalsList) > 0){
+                          GlobalParseTreeTable.get(i-1).get(substringEnd-1).add(new ParseTreeNode(rule.getVariable(),child1,child2));
+                        }
+                      }
+                    }
+                  }
                 }
               }
-            //If the current cell is empty
-            } else{
-              //We have several possibilites that got us here. We could be at the edges meaning we have to
-              //move the previous cell accordingly. If we are at a top edge we need to move the cell to our left
-              //on us. If we are at a right edge we need to move the cell below us to us. 
-              //Since we are moving diagonally, when i=1 we are at top, and when i=lengthOfWord-1 we are at right
-              if(i==1){
-                GlobalParseTreeTable.get(i-1).get(i+addition).add((ParseTreeNode)GlobalParseTreeTable.get(i-1).get(i-1+addition).get(0));
-                GlobalSymbolTable.get(i-1).get(i+addition).add(GlobalSymbolTable.get(i-1).get(i-1+addition).get(1));
-                GlobalSymbolTable.get(i-1).get(i-1+addition).set(1,nullSymbol);
-              }
-              if(i==lengthOfWord-1){
-                GlobalParseTreeTable.get(i-1).get(i+addition).add((ParseTreeNode)GlobalParseTreeTable.get(i).get(i+addition).get(0));
-                GlobalSymbolTable.get(i-1).get(i+addition).add(GlobalSymbolTable.get(i).get(i+addition).get(1));
-                GlobalSymbolTable.get(i).get(i+addition).set(1,nullSymbol);
-              }
             }
           }
-          //Loop end
         }
-        //We are at the final place
-        ParseTreeNode terminalNode = (ParseTreeNode)GlobalParseTreeTable.get(0).get(lengthOfWord-2).get(0);
-        ParseTreeNode terminalNode2 = (ParseTreeNode)GlobalParseTreeTable.get(1).get(lengthOfWord-1).get(0);
-        ParseTreeNode finalParseTree = new ParseTreeNode(stVar,terminalNode,terminalNode2);
-        return finalParseTree;
+        return treeFromSymbol(stVar, 0, lengthOfWord-1);
       }
-      return null;
+      System.out.println("Word is not in language!");
+      return new ParseTreeNode(nullSymbol);
     }catch(Exception e){
       System.out.println("Error in CYK tree generation : " + e);
       return null;
     }
   }
+
+ 
 }

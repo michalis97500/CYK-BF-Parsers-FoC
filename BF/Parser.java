@@ -1,3 +1,4 @@
+package BF;
 import computation.contextfreegrammar.*;
 import computation.parser.*;
 import computation.parsetree.*;
@@ -118,7 +119,10 @@ public class Parser implements IParser {
           return parseTreeFinal;
         }
       }
-      return null;
+    
+    System.out.println("Word is not in language!");
+    Variable nullSymbol = new Variable('Ⅰ');
+    return new ParseTreeNode(nullSymbol);
     } catch (Exception e){
       System.out.println("Error in generateParseTree : " + e);
       return null;

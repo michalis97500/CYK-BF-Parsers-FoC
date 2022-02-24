@@ -9,6 +9,7 @@
 import java.util.Arrays;
 import java.util.Scanner;
 
+import CYK.Parser;
 import computation.contextfreegrammar.*;
 import computation.parser.*;
 import computation.parsetree.*;
@@ -28,31 +29,39 @@ class Main {
 
 		
 		ContextFreeGrammar cfg = MyGrammar.courseworkCNF();
+
 		System.out.println("Brute Force tests:");
 		Word testString = new Word("x+x");
 		Word testString1 = new Word("1+0");
 		Word testString2 = new Word("01");
 		Word testString3 = new Word("*-*");
-		System.out.println(parser.isInLanguage(cfg, testString));
-		System.out.println(parser.isInLanguage(cfg, testString1));
-		System.out.println(parser.isInLanguage(cfg, testString2));
-		System.out.println(parser.isInLanguage(cfg, testString3));
+		System.out.println("Is word : \'" + testString + "\' in language. Result : " + parser.isInLanguage(cfg, testString));
+		System.out.println("Is word : \'" + testString1 + "\' in language. Result : " +parser.isInLanguage(cfg, testString1));
+		System.out.println("Is word : \'" + testString2 + "\' in language. Result : " +parser.isInLanguage(cfg, testString2));
+		System.out.println("Is word : \'" + testString3 + "\' in language. Result : " +parser.isInLanguage(cfg, testString3));
 		
 		System.out.println("CYK Tests:");
-		testString1 = new Word("1*-0*-1+0*-1");
+		testString = new Word("1*-0*-1+0*-1");
 		testString1 = new Word("0+-1*-0+1*1");
 		testString2 = new Word("1*0+--1+0*1");
 		testString3 = new Word("1*0+0-1+1+0+-0");
-		System.out.println(parser.isInLanguage(cfg, testString));
-		System.out.println(parser.isInLanguage(cfg, testString1));
-		System.out.println(parser.isInLanguage(cfg, testString2));
-		System.out.println(parser.isInLanguage(cfg, testString3));
+		System.out.println("Is word : \'" + testString + "\' in language. Result : " +parser.isInLanguage(cfg, testString));
+		System.out.println("Is word : \'" + testString1 + "\' in language. Result : " +parser.isInLanguage(cfg, testString1));
+		System.out.println("Is word : \'" + testString2 + "\' in language. Result : " +parser.isInLanguage(cfg, testString2));
+		System.out.println("Is word : \'" + testString3 + "\' in language. Result : " +parser.isInLanguage(cfg, testString3));
 		
-		System.out.println("Tree generation Tests:");
-		System.out.println(parser.generateParseTree(cfg, testString));
+		System.out.println("CYK Tree generation Tests:");
+		System.out.println("Parse Tree for word :  \'" + testString+ "\'");
+		parser.generateParseTree(cfg, testString).print();
+		System.out.println("Parse Tree for word :  \'" + testString1 + "\'");
+		parser.generateParseTree(cfg, testString1).print();
+		System.out.println("CYK Tree generation Tests:");
+		System.out.println("Parse Tree for word :  \'" + testString2+ "\'");
+		parser.generateParseTree(cfg, testString2).print();
+		System.out.println("Parse Tree for word :  \'" + testString3 + "\'");
+		parser.generateParseTree(cfg, testString3).print();
+
 	}
-
-
 
 	/* ******************************************************************************************************
 	 * You should not need to edit anything below this line.
